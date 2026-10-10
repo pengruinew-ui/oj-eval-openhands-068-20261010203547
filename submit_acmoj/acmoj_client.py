@@ -88,10 +88,23 @@ class ACMOJClient:
             print(f"⚠️ Warning: Failed to save submission ID: {e}")
 
     def submit_git(self, problem_id: int, git_url: str) -> Optional[Dict]:
-        data = {"language": "git", "code": git_url}
-        result = self._make_request("POST", f"/problem/{problem_id}/submit", data=data)
+        import json, requests
+        url = f"{self.api_base}/problem/{problem_id}/submit"
+        headers = self.headers.copy()
+        headers["Content-Type"] = "application/json"
+        payload = {"language": "git", "code": git_url}
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            response.raise_for_status()
+            result = response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"API Request failed: {e}")
+            if 'response' in locals() and response:
+                print(f"Response text: {response.text}")
+            return None
         if result and 'id' in result:
             self._save_submission_id(result['id'])
+        return result
 
         return result
 
